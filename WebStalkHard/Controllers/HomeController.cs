@@ -18,6 +18,7 @@ namespace WebStalkHard.Controllers
             return View();
         }
 
+        [HttpPost]
         public ActionResult Chatterbot(FormCollection form)
         {
             return View();
