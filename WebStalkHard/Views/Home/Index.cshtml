@@ -18,6 +18,9 @@
     <link href="~/Content/bootstrap.min.css" rel="stylesheet">
     <!-- Custom styles for this template -->
     <link href="~/Content/signin.css" rel="stylesheet">
+
+    <link href="~/Content/Site.css" rel="stylesheet" type="text/css" />
+    <script src="~/Scripts/modernizr-2.6.2.js"></script>
 </head>
 <body>
     <script>
@@ -29,13 +32,17 @@
             // app know the current login status of the person.
             // Full docs on the response object can be found in the documentation
             // for FB.getLoginStatus().
+
             if (response.status === 'connected') {
                 // Logged into your app and Facebook.
                 testAPI();
+                document.getElementById('btnCriar').removeAttribute('disabled');
+                document.getElementById('hiddenAccessToken').value = response.authResponse.accessToken;
             } else {
                 // The person is not logged into your app or we are unable to tell.
-                document.getElementById('status').innerHTML = 'Please log ' +
-                    'into this app.';
+                document.getElementById('btnCriar').setAttribute('disabled', 'true');
+                document.getElementById('status').innerHTML = 'Faça login neste aplicativo.';
+                document.getElementById('hiddenAccessToken').value = '';
             }
         }
 
@@ -54,7 +61,7 @@
                 cookie: true,  // enable cookies to allow the server to access
                 // the session
                 xfbml: true,  // parse social plugins on this page
-                version: 'v2.8' // use graph api version 2.8
+                version: 'v2.10' // use graph api version 2.8
             });
 
             // Now that we've initialized the JavaScript SDK, we call
@@ -72,26 +79,25 @@
             FB.getLoginStatus(function (response) {
                 statusChangeCallback(response);
             });
-
         };
 
         // Load the SDK asynchronously
         (function(d, s, id) {
-          var js, fjs = d.getElementsByTagName(s)[0];
-          if (d.getElementById(id)) return;
-          js = d.createElement(s); js.id = id;
-          js.src = "//connect.facebook.net/pt_BR/sdk.js#xfbml=1&version=v2.10&appId=254366858409178";
-          fjs.parentNode.insertBefore(js, fjs);
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) return;
+            js = d.createElement(s); js.id = id;
+            js.src = "//connect.facebook.net/pt_BR/sdk.js#xfbml=1&version=v2.10&appId=254366858409178";
+            fjs.parentNode.insertBefore(js, fjs);
         }(document, 'script', 'facebook-jssdk'));
 
         // Here we run a very simple test of the Graph API after login is
         // successful.  See statusChangeCallback() for when this call is made.
         function testAPI() {
-            console.log('Welcome!  Fetching your information.... ');
+            console.log('Bem vindo! Obtendo sua informação...');
             FB.api('/me', function (response) {
-                console.log('Successful login for: ' + response.name);
+                console.log('Login bem-sucedido para: ' + response.name);
                 document.getElementById('status').innerHTML =
-                    'Thanks for logging in, ' + response.name + '!';
+                    'Obrigado por fazer login, ' + response.name + '!';
             });
         }
     </script>
@@ -128,47 +134,26 @@
                 </div>
             </div>
 
-            <button class="btn btn-lg btn-primary btn-block" type="submit">Stalkear</button>
-            <h5 style="text-align:center;margin-top:50px;">
-                Para informações privilegiadas de seus amigos, entre com as suas redes sociais:
-            </h5>
+            <button id="btnCriar" class="btn btn-lg btn-primary btn-block" type="submit">Criar</button>
 
+            <h5 style="text-align:center;margin-top:50px;">
+                Para uma experiência mais completa, entre com a sua conta do Facebook:
+            </h5>
             <div class="fb-login-button" data-width="300" data-max-rows="1" data-size="large" data-button-type="continue_with" data-show-faces="false" 
-                 data-auto-logout-link="false" data-use-continue-as="false" data-scope="@ViewData["Permissoes"]">
+                 data-auto-logout-link="true" data-use-continue-as="false" data-scope="@ViewData["Permissoes"]" onlogin="checkLoginState">
             </div>
             <div id="status"></div>
+            <div>
+                @Html.Hidden("hiddenAccessToken")
+            </div>
 
-            <button class="btn btn-block">
+            @*<button class="btn btn-block">
                 <img alt="Botão Iniciar sessão" src="https://g.twimg.com/dev/sites/default/files/images_documentation/sign-in-with-twitter-gray.png">
-            </button>
-
-            @*<button class="btn btn-lg btn-primary btn-block">Entrar com o Facebook</button>
-            <button class="btn btn-lg btn-primary btn-block">Entrar com o Twitter</button>*@
+            </button>*@
         </form>
-
-        @*<div class="fb-like"
-                 data-share="true"
-                 data-width="450"
-                 data-show-faces="true">
-            </div>*@
     </div>
-</body>
-@*<script>
-      window.fbAsyncInit = function() {
-        FB.init({
-          appId      : '254366858409178',
-          xfbml      : true,
-          version    : 'v2.10'
-        });
-        FB.AppEvents.logPageView();
-      };
 
-      (function(d, s, id){
-         var js, fjs = d.getElementsByTagName(s)[0];
-         if (d.getElementById(id)) {return;}
-         js = d.createElement(s); js.id = id;
-         js.src = "//connect.facebook.net/pt_BR/sdk.js";
-         fjs.parentNode.insertBefore(js, fjs);
-       }(document, 'script', 'facebook-jssdk'));
-    </script>*@
+    <script src="~/Scripts/jquery-1.9.1.min.js"></script>
+    <script src="~/Scripts/bootstrap.min.js"></script>
+</body>
 </html>
