@@ -43,6 +43,7 @@
                 document.getElementById('btnCriar').setAttribute('disabled', 'true');
                 document.getElementById('status').innerHTML = 'Faça login neste aplicativo.';
                 document.getElementById('hiddenAccessToken').value = '';
+                document.getElementById('inputUserFacebook').value = '';
             }
         }
 
@@ -96,8 +97,8 @@
             console.log('Bem vindo! Obtendo sua informação...');
             FB.api('/me', function (response) {
                 console.log('Login bem-sucedido para: ' + response.name);
-                document.getElementById('status').innerHTML =
-                    'Obrigado por fazer login, ' + response.name + '!';
+                document.getElementById('status').innerHTML = 'Obrigado por fazer login, ' + response.name + '!';
+                document.getElementById('inputUserFacebook').value = response.name;
             });
         }
     </script>
@@ -117,7 +118,7 @@
             <div>
                 <div style="float:left;margin-left:20px;">
                     <label for="inputUserFacebook" class="sr-only">Usuário do Facebook</label>
-                    @Html.TextBox("inputUserFacebook", "", new { @class = "form-control", @placeholder = "/stalkhard", @required = true, @autofocus = true })
+                    @Html.TextBox("inputUserFacebook", "", new { @class = "form-control", @placeholder = "/stalkhard", @required = true, @disabled = true })
                 </div>
                 <div style="float:left;margin-top:6px;">
                     <img src="~/Images/logo-facebook.png" alt="Facebook" @*class="img-circle"*@ style="width:30px;margin-left:5px;">
@@ -127,7 +128,7 @@
             <div>
                 <div style="float:left;margin-left:20px;margin-bottom:15px;">
                     <label for="inputUserTwitter" class="sr-only">Usuário do Twitter</label>
-                    @Html.TextBox("inputUserTwitter", "", new { @class = "form-control", @placeholder = "@stalkhard", @required = true })
+                    @Html.TextBox("inputUserTwitter", "", new { @class = "form-control", @placeholder = "@stalkhard", @required = true, @autofocus = true })
                 </div>
                 <div style="float:left;margin-top:6px;">
                     <img src="~/Images/logo-twitter.png" alt="Twitter" @*class="img-circle"*@ style="width:30px;margin-left:5px;">

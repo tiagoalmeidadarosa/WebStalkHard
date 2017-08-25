@@ -13,6 +13,8 @@ namespace WebStalkHard
         {
             AreaRegistration.RegisterAllAreas();
             RouteConfig.RegisterRoutes(RouteTable.Routes);
+
+            DocumentDBRepository<WebStalkHard.Models.Login>.Initialize();
         }
     }
 }
