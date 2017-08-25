@@ -12,12 +12,21 @@ namespace WebStalkHard.Models
         public string AccessTokenFacebook { get; set; }
 
         [JsonProperty(PropertyName = "accessTokenTwitter")]
-        public string AccessTokenTwitter { get; set; }
+        public TwitAuthenticateResponse AccessTokenTwitter { get; set; }
 
         [JsonProperty(PropertyName = "userFacebook")]
         public string UserFacebook { get; set; }
 
         [JsonProperty(PropertyName = "userTwitter")]
         public string UserTwitter { get; set; }
+    }
+
+    public class TwitAuthenticateResponse
+    {
+        [JsonProperty(PropertyName = "token_type")]
+        public string TokenType { get; set; }
+
+        [JsonProperty(PropertyName = "access_token")]
+        public string AccessToken { get; set; }
     }
 }

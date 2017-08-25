@@ -23,11 +23,19 @@
     <script src="~/Scripts/modernizr-2.6.2.js"></script>
 </head>
 <body>
-    <div class="container">
-        <form class="form-signin">
-            <iframe src='https://webchat.botframework.com/embed/stalkhard?s=nQkZYLnshAk.cwA.0Ls.ngdhbkvnHnBeIE5FN9u7t4kEcg0aTSPG2ao8Cv1s5aQ' style="height:500px;width:600px;margin-left:-150px;"></iframe>
-        </form>
-    </div>
+    @if (Model != null) {
+        <div class="container">
+            <form class="form-signin">
+                <iframe src='https://webchat.botframework.com/embed/stalkhard?s=nQkZYLnshAk.cwA.0Ls.ngdhbkvnHnBeIE5FN9u7t4kEcg0aTSPG2ao8Cv1s5aQ' style="height:500px;width:600px;margin-left:-150px;"></iframe>
+            </form>
+        </div>
+    }
+    else
+    {
+        <div class="container">
+            Não foi possível encontrar o seu Chatterbot, por favor crie um novo visitando a página inicial.
+        </div>
+    }
 
     <script src="~/Scripts/jquery-1.9.1.min.js"></script>
     <script src="~/Scripts/bootstrap.min.js"></script>
