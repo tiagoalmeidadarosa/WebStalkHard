@@ -14,6 +14,7 @@ using System.Web.Script.Serialization;
 using WebStalkHard.Models;
 using System.Runtime.Serialization;
 using System.Xml;
+using System.Net.Http.Headers;
 
 namespace WebStalkHard.Controllers
 {
@@ -32,8 +33,13 @@ namespace WebStalkHard.Controllers
         [ActionName("Create")]
         public async Task<ActionResult> CreateAsync(FormCollection form)
         {
+            //Teste
             string authToken = await GetAccessTokenTranslateAsync();
             var traducao = Translate(authToken, "pt", "en", "Eu odeio futebol.");
+
+            SetKeyPhrases(authToken, traducao);
+            //Novo método para inserir as keyphrases no banco
+            //Teste
 
             Login login = new Login();
             login.UserFacebook = form["inputUserFacebook"];
@@ -156,7 +162,11 @@ namespace WebStalkHard.Controllers
 
             long id_max = timeLineObj[99].id;
 
-            //new Thread(SetDiscoverSomethingTwitter(twitAuthResponse, screenName, id_max - 1, idLogin)).Start();
+            /*new Thread(() =>
+            {
+                SetDiscoverSomethingTwitter(twitAuthResponse, screenName, id_max - 1, idLogin);
+
+            }).Start();*/
 
             //Todo: Ir enviando o resto por thread
             //Todo: E salvar no banco
@@ -181,9 +191,17 @@ namespace WebStalkHard.Controllers
                 request.Content = new StringContent(string.Empty);
                 request.Headers.TryAddWithoutValidation("Ocp-Apim-Subscription-Key", "efc56f55f859425885cd2a46ed75fb55");
                 client.Timeout = TimeSpan.FromSeconds(2);
-                var response = await client.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-                var token = await response.Content.ReadAsStringAsync();
+
+                HttpResponseMessage response;
+                string token = "";
+                try
+                {
+                    response = await client.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+                    token = await response.Content.ReadAsStringAsync();
+                }
+                catch(HttpException ex) {}
+                
                 storedTokenTime = DateTime.Now;
                 storedTokenValue = "Bearer " + token;
                 return storedTokenValue;
@@ -216,6 +234,46 @@ namespace WebStalkHard.Controllers
             XmlNodeList elemList = xmlDocument.GetElementsByTagName("string");
 
             return elemList[0].InnerXml;
+        }
+
+        public void SetKeyPhrases(string authToken, string text)
+        {
+            var client = new HttpClient();
+
+            // Request headers
+            client.DefaultRequestHeaders
+                    .Accept
+                    .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "6b92be4a92be453dab8591fe28fb86af");
+
+            // Request parameters
+            var uri = "https://westus.api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases";
+
+            byte[] byteData = Encoding.UTF8.GetBytes("{\"documents\": [{\"language\": \"en\",\"id\": \"1\",\"text\": \"" + text + "\"}]}");
+
+            var textAnalytics = "";
+
+            HttpResponseMessage response;
+            using (var content = new ByteArrayContent(byteData))
+            {
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                response = client.PostAsync(uri, content).Result;
+
+                using (var stream = response.Content.ReadAsStreamAsync().Result)
+                {
+                    using (var reader = new StreamReader(stream))
+                    {
+                        textAnalytics = reader.ReadToEnd();
+                    }
+                }
+            }
+
+            dynamic textAnalyticsObj = JsonConvert.DeserializeObject(textAnalytics);
+            foreach (var doc in textAnalyticsObj)
+            {
+                var traducaokeyPhrases = Translate(authToken, "en", "pt", doc.keyPhrases);
+                //Todo: Inserir de alguma forma n banco as keyPhrases
+            }
         }
     }
 }
