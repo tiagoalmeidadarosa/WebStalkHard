@@ -4,12 +4,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Script.Serialization;
 using WebStalkHard.Models;
+using System.Runtime.Serialization;
+using System.Xml;
 
 namespace WebStalkHard.Controllers
 {
@@ -28,6 +32,9 @@ namespace WebStalkHard.Controllers
         [ActionName("Create")]
         public async Task<ActionResult> CreateAsync(FormCollection form)
         {
+            string authToken = await GetAccessTokenTranslateAsync();
+            var traducao = Translate(authToken, "pt", "en", "Eu odeio futebol.");
+
             Login login = new Login();
             login.UserFacebook = form["inputUserFacebook"];
             login.AccessTokenFacebook = form["hiddenAccessToken"];
@@ -50,7 +57,7 @@ namespace WebStalkHard.Controllers
                 id = loginCreated.Id;
             }
 
-            SetDiscoverSomethingTwitter(accessTokenTwitter, userTwitter, id);
+            SetDiscoverSomethingTwitter(accessTokenTwitter, userTwitter, 0, id);
 
             return RedirectToAction("Chatterbot", "Home", new { id = id });
         }
@@ -65,7 +72,7 @@ namespace WebStalkHard.Controllers
 
         public TwitAuthenticateResponse GetAccessTokenTwitter()
         {
-            // You need to set your own keys and screen name
+            // You need to set your own keys
             var oAuthConsumerKey = "qWh8ir2uy6jgMILcgFxRitq6R";
             var oAuthConsumerSecret = "cF71OBRKJTNhrncTrH9Ei1HKIoFwOWKodd7AbflDhCRzBKDozh";
             var oAuthUrl = "https://api.twitter.com/oauth2/token";
@@ -110,11 +117,23 @@ namespace WebStalkHard.Controllers
             return twitAuthResponse;
         }
 
-        public void SetDiscoverSomethingTwitter(TwitAuthenticateResponse twitAuthResponse, string screenName, string idLogin)
+        public void SetDiscoverSomethingTwitter(TwitAuthenticateResponse twitAuthResponse, string screenName, long idMax, string idLogin)
         {
             // Do the timeline
-            var timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&include_rts=0&exclude_replies=1&count=100";
-            var timelineUrl = string.Format(timelineFormat, screenName);
+            var timelineFormat = "";
+            var timelineUrl = "";
+
+            if(idMax > 0)
+            {
+                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&max_id={1}&include_rts=0&exclude_replies=1&count=100";
+                timelineUrl = string.Format(timelineFormat, screenName, idMax);
+            }
+            else
+            {
+                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&include_rts=0&exclude_replies=1&count=100";
+                timelineUrl = string.Format(timelineFormat, screenName);
+            }
+            
             HttpWebRequest timeLineRequest = (HttpWebRequest)WebRequest.Create(timelineUrl);
             var timelineHeaderFormat = "{0} {1}";
             timeLineRequest.Headers.Add("Authorization", string.Format(timelineHeaderFormat, twitAuthResponse.TokenType, twitAuthResponse.AccessToken));
@@ -129,9 +148,74 @@ namespace WebStalkHard.Controllers
                 }
             }
 
+            dynamic timeLineObj = JsonConvert.DeserializeObject(timeLineJson);
+            foreach(var tweet in timeLineObj)
+            {
+                //Todo: Fazer análise do tweet.text.value
+            }
+
+            long id_max = timeLineObj[99].id;
+
+            //new Thread(SetDiscoverSomethingTwitter(twitAuthResponse, screenName, id_max - 1, idLogin)).Start();
+
             //Todo: Ir enviando o resto por thread
-            //Todo: Fazer análise
             //Todo: E salvar no banco
+        }
+
+        private DateTime storedTokenTime = DateTime.MinValue;
+        private string storedTokenValue = string.Empty;
+
+        public async Task<string> GetAccessTokenTranslateAsync()
+        {
+            // Re-use the cached token if there is one.
+            if ((DateTime.Now - storedTokenTime) < new TimeSpan(0, 5, 0))
+            {
+                return storedTokenValue;
+            }
+
+            using (var client = new HttpClient())
+            using (var request = new HttpRequestMessage())
+            {
+                request.Method = HttpMethod.Post;
+                request.RequestUri = new Uri("https://api.cognitive.microsoft.com/sts/v1.0/issueToken");
+                request.Content = new StringContent(string.Empty);
+                request.Headers.TryAddWithoutValidation("Ocp-Apim-Subscription-Key", "efc56f55f859425885cd2a46ed75fb55");
+                client.Timeout = TimeSpan.FromSeconds(2);
+                var response = await client.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                var token = await response.Content.ReadAsStringAsync();
+                storedTokenTime = DateTime.Now;
+                storedTokenValue = "Bearer " + token;
+                return storedTokenValue;
+            }
+        }
+
+        public string Translate(string authToken, string from, string to, string text)
+        {
+            string uri = "https://api.microsofttranslator.com/v2/Http.svc/Translate?text=" + HttpUtility.UrlEncode(text) + "&from=" + from + "&to=" + to;
+            HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
+            httpWebRequest.Headers.Add("Authorization", authToken);
+
+            var translation = string.Empty;
+            using (WebResponse response = httpWebRequest.GetResponse())
+            /*using (Stream stream = response.GetResponseStream())
+            {
+                DataContractSerializer dcs = new DataContractSerializer(Type.GetType("System.String"));
+                string translation = (string)dcs.ReadObject(stream);
+                Console.WriteLine("Translation for source text '{0}' from {1} to {2} is", text, "en", "de");
+                Console.WriteLine(translation);
+            }*/
+            using (var reader = new StreamReader(response.GetResponseStream()))
+            {
+                translation = reader.ReadToEnd();
+            }
+
+            XmlDocument xmlDocument = new XmlDocument();
+            xmlDocument.LoadXml(translation);
+
+            XmlNodeList elemList = xmlDocument.GetElementsByTagName("string");
+
+            return elemList[0].InnerXml;
         }
     }
 }
