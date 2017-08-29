@@ -33,14 +33,6 @@ namespace WebStalkHard.Controllers
         [ActionName("Create")]
         public async Task<ActionResult> CreateAsync(FormCollection form)
         {
-            //Teste
-            string authToken = await GetAccessTokenTranslateAsync();
-            var traducao = Translate(authToken, "pt", "en", "Eu odeio futebol.");
-
-            SetKeyPhrases(authToken, traducao);
-            //Novo método para inserir as keyphrases no banco
-            //Teste
-
             Login login = new Login();
             login.UserFacebook = form["inputUserFacebook"];
             login.AccessTokenFacebook = form["hiddenAccessToken"];
@@ -63,7 +55,8 @@ namespace WebStalkHard.Controllers
                 id = loginCreated.Id;
             }
 
-            SetDiscoverSomethingTwitter(accessTokenTwitter, userTwitter, 0, id);
+            //Método que cria as respostas para a opção Descobrir Algo do chatterbot, a partir do Twitter
+            await SetDiscoverSomethingTwitterAsync(accessTokenTwitter, userTwitter, 0, id);
 
             return RedirectToAction("Chatterbot", "Home", new { id = id });
         }
@@ -78,6 +71,8 @@ namespace WebStalkHard.Controllers
 
         public TwitAuthenticateResponse GetAccessTokenTwitter()
         {
+            //Busca o token de acesso para a API do Twitter, vai ser utilizado dentro do chatterbot. Nota-se que não é necessário login
+
             // You need to set your own keys
             var oAuthConsumerKey = "qWh8ir2uy6jgMILcgFxRitq6R";
             var oAuthConsumerSecret = "cF71OBRKJTNhrncTrH9Ei1HKIoFwOWKodd7AbflDhCRzBKDozh";
@@ -123,9 +118,47 @@ namespace WebStalkHard.Controllers
             return twitAuthResponse;
         }
 
-        public void SetDiscoverSomethingTwitter(TwitAuthenticateResponse twitAuthResponse, string screenName, long idMax, string idLogin)
+        private DateTime storedTokenTime = DateTime.MinValue;
+        private string storedTokenValue = string.Empty;
+
+        public async Task<string> GetAccessTokenTranslateAsync()
         {
-            // Do the timeline
+            //Busca o token de acesso para ser utilizado na API de Translate da Microsoft. Ele expira a cada 10 minutos, então é necessário uma validação
+
+            // Re-use the cached token if there is one.
+            if ((DateTime.Now - storedTokenTime) < new TimeSpan(0, 5, 0))
+            {
+                return storedTokenValue;
+            }
+
+            using (var client = new HttpClient())
+            using (var request = new HttpRequestMessage())
+            {
+                request.Method = HttpMethod.Post;
+                request.RequestUri = new Uri("https://api.cognitive.microsoft.com/sts/v1.0/issueToken");
+                request.Content = new StringContent(string.Empty);
+                request.Headers.TryAddWithoutValidation("Ocp-Apim-Subscription-Key", "efc56f55f859425885cd2a46ed75fb55");
+                client.Timeout = TimeSpan.FromSeconds(2);
+
+                HttpResponseMessage response;
+                string token = "";
+                try
+                {
+                    response = await client.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+                    token = await response.Content.ReadAsStringAsync();
+                }
+                catch (HttpException ex) { }
+
+                storedTokenTime = DateTime.Now;
+                storedTokenValue = "Bearer " + token;
+                return storedTokenValue;
+            }
+        }
+
+        public async Task SetDiscoverSomethingTwitterAsync(TwitAuthenticateResponse twitAuthResponse, string screenName, long idMax, string idLogin)
+        {
+            // Busca uma lista de tweets do usuário, neste caso os 100 primeiros. Após isso, é feito por thread, pegando os 100 tweets mais antigos que estes, e assim sucessivamente
             var timelineFormat = "";
             var timelineUrl = "";
 
@@ -154,75 +187,51 @@ namespace WebStalkHard.Controllers
                 }
             }
 
-            dynamic timeLineObj = JsonConvert.DeserializeObject(timeLineJson);
-            foreach(var tweet in timeLineObj)
+            int count = 0;
+            dynamic tweets = new JavaScriptSerializer().DeserializeObject(timeLineJson);
+            foreach(dynamic tweet in tweets)
             {
-                //Todo: Fazer análise do tweet.text.value
-            }
+                //Busca token de acesso para API de Translate
+                string authToken = await GetAccessTokenTranslateAsync();
+                //Chama API de Tradução, traduzindo o tweet de pt para en
+                string traducao = Translate(authToken, "pt", "en", tweet["text"]);
 
-            long id_max = timeLineObj[99].id;
+                //Chama API de Análise de Texto, para buscar as palavras chave da frase tweetada 
+                dynamic keyPhrasesObj = GetKeyPhrases(traducao);
 
-            /*new Thread(() =>
-            {
-                SetDiscoverSomethingTwitter(twitAuthResponse, screenName, id_max - 1, idLogin);
-
-            }).Start();*/
-
-            //Todo: Ir enviando o resto por thread
-            //Todo: E salvar no banco
-        }
-
-        private DateTime storedTokenTime = DateTime.MinValue;
-        private string storedTokenValue = string.Empty;
-
-        public async Task<string> GetAccessTokenTranslateAsync()
-        {
-            // Re-use the cached token if there is one.
-            if ((DateTime.Now - storedTokenTime) < new TimeSpan(0, 5, 0))
-            {
-                return storedTokenValue;
-            }
-
-            using (var client = new HttpClient())
-            using (var request = new HttpRequestMessage())
-            {
-                request.Method = HttpMethod.Post;
-                request.RequestUri = new Uri("https://api.cognitive.microsoft.com/sts/v1.0/issueToken");
-                request.Content = new StringContent(string.Empty);
-                request.Headers.TryAddWithoutValidation("Ocp-Apim-Subscription-Key", "efc56f55f859425885cd2a46ed75fb55");
-                client.Timeout = TimeSpan.FromSeconds(2);
-
-                HttpResponseMessage response;
-                string token = "";
-                try
+                foreach (var doc in keyPhrasesObj["documents"])
                 {
-                    response = await client.SendAsync(request);
-                    response.EnsureSuccessStatusCode();
-                    token = await response.Content.ReadAsStringAsync();
+                    //Coloca num stringão todas as palavras chaves separadas por ", "
+                    string keyPhrases = string.Join(", ", doc["keyPhrases"]);
+                    //Chama API de Tradução, agora traduzindo as palavras chave em en para pt para mostrar corretamente pro usuário
+                    var traducaokeyPhrases = Translate(authToken, "en", "pt", keyPhrases);
+
+                    //Todo: Inserir de alguma forma no banco as keyPhrases
                 }
-                catch(HttpException ex) {}
-                
-                storedTokenTime = DateTime.Now;
-                storedTokenValue = "Bearer " + token;
-                return storedTokenValue;
+
+                count++;
             }
+
+            //ID do último tweet retornado, para consultar os mais antigos a partir desse, na próxima vez
+            var lastTweet = tweets[count];
+            long id_max = lastTweet["id"];
+
+            //Inicia thread para ir enchendo a base do usuário com mais tweets
+            /*new Thread(async () =>
+            {
+                await SetDiscoverSomethingTwitterAsync(twitAuthResponse, screenName, id_max - 1, idLogin);
+            }).Start();*/
         }
 
         public string Translate(string authToken, string from, string to, string text)
         {
+            //Faz a tradução de uma frase. É utilizado pois a API de Análise de Texto só suporta o Inglês, aí traduzo e dps retorno pro Português de novo
             string uri = "https://api.microsofttranslator.com/v2/Http.svc/Translate?text=" + HttpUtility.UrlEncode(text) + "&from=" + from + "&to=" + to;
             HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
             httpWebRequest.Headers.Add("Authorization", authToken);
 
             var translation = string.Empty;
             using (WebResponse response = httpWebRequest.GetResponse())
-            /*using (Stream stream = response.GetResponseStream())
-            {
-                DataContractSerializer dcs = new DataContractSerializer(Type.GetType("System.String"));
-                string translation = (string)dcs.ReadObject(stream);
-                Console.WriteLine("Translation for source text '{0}' from {1} to {2} is", text, "en", "de");
-                Console.WriteLine(translation);
-            }*/
             using (var reader = new StreamReader(response.GetResponseStream()))
             {
                 translation = reader.ReadToEnd();
@@ -236,8 +245,9 @@ namespace WebStalkHard.Controllers
             return elemList[0].InnerXml;
         }
 
-        public void SetKeyPhrases(string authToken, string text)
+        public dynamic GetKeyPhrases(string text)
         {
+            //Busca as palavras chave de uma frase. Utilizado aqui, para análise dos sentimentos nos tweets do usuário
             var client = new HttpClient();
 
             // Request headers
@@ -268,12 +278,9 @@ namespace WebStalkHard.Controllers
                 }
             }
 
-            dynamic textAnalyticsObj = JsonConvert.DeserializeObject(textAnalytics);
-            foreach (var doc in textAnalyticsObj)
-            {
-                var traducaokeyPhrases = Translate(authToken, "en", "pt", doc.keyPhrases);
-                //Todo: Inserir de alguma forma n banco as keyPhrases
-            }
+            dynamic textAnalyticsObj = new JavaScriptSerializer().DeserializeObject(textAnalytics);
+
+            return textAnalyticsObj;
         }
     }
 }
