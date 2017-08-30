@@ -158,6 +158,8 @@ namespace WebStalkHard.Controllers
 
         public async Task SetDiscoverSomethingTwitterAsync(TwitAuthenticateResponse twitAuthResponse, string screenName, long idMax, string idLogin)
         {
+            var item = await DocumentDBRepository<Login>.GetItemAsync(idLogin);
+
             // Busca uma lista de tweets do usuário, neste caso os 100 primeiros. Após isso, é feito por thread, pegando os 100 tweets mais antigos que estes, e assim sucessivamente
             var timelineFormat = "";
             var timelineUrl = "";
@@ -193,8 +195,6 @@ namespace WebStalkHard.Controllers
             dynamic tweets = new JavaScriptSerializer().DeserializeObject(timeLineJson);
             foreach(dynamic tweet in tweets)
             {
-                count++;
-
                 //Busca token de acesso para API de Translate
                 string authToken = await GetAccessTokenTranslateAsync();
 
@@ -202,11 +202,13 @@ namespace WebStalkHard.Controllers
                 string traducao = Translate(authToken, "pt", "en", tweet["text"]);
 
                 Document document = new Document();
-                document.Id = count.ToString();
+                document.Id = (string)tweet["id"];
                 document.Language = "en";
                 document.Text = traducao;
 
                 KeyPhrases.Documents.Add(document);
+
+                count++;
             }
 
             //Chama API de Análise de Texto, para buscar as palavras chave da frase tweetada 
@@ -223,6 +225,14 @@ namespace WebStalkHard.Controllers
                 var traducaokeyPhrases = Translate(authToken, "en", "pt", keyPhrases);
 
                 //Todo: Inserir de alguma forma no banco as keyPhrases
+                Tweet tweet = new Tweet();
+                tweet.IdTweet = doc["id"];
+                //tweet.TextTweet = 
+                tweet.KeyPhrases = traducaokeyPhrases;
+
+                item.Tweets.Add(tweet);
+
+                var loginCreated = await DocumentDBRepository<Login>.UpdateItemAsync(idLogin, item);
             }
 
             //ID do último tweet retornado, para consultar os mais antigos a partir desse, na próxima vez
