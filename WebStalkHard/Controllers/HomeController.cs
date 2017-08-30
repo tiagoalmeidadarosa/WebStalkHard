@@ -187,33 +187,46 @@ namespace WebStalkHard.Controllers
                 }
             }
 
+            KeyPhrases KeyPhrases = new KeyPhrases();
+
             int count = 0;
             dynamic tweets = new JavaScriptSerializer().DeserializeObject(timeLineJson);
             foreach(dynamic tweet in tweets)
             {
+                count++;
+
                 //Busca token de acesso para API de Translate
                 string authToken = await GetAccessTokenTranslateAsync();
+
                 //Chama API de Tradução, traduzindo o tweet de pt para en
                 string traducao = Translate(authToken, "pt", "en", tweet["text"]);
 
-                //Chama API de Análise de Texto, para buscar as palavras chave da frase tweetada 
-                dynamic keyPhrasesObj = GetKeyPhrases(traducao);
+                Document document = new Document();
+                document.Id = count.ToString();
+                document.Language = "en";
+                document.Text = traducao;
 
-                foreach (var doc in keyPhrasesObj["documents"])
-                {
-                    //Coloca num stringão todas as palavras chaves separadas por ", "
-                    string keyPhrases = string.Join(", ", doc["keyPhrases"]);
-                    //Chama API de Tradução, agora traduzindo as palavras chave em en para pt para mostrar corretamente pro usuário
-                    var traducaokeyPhrases = Translate(authToken, "en", "pt", keyPhrases);
+                KeyPhrases.Documents.Add(document);
+            }
 
-                    //Todo: Inserir de alguma forma no banco as keyPhrases
-                }
+            //Chama API de Análise de Texto, para buscar as palavras chave da frase tweetada 
+            dynamic keyPhrasesObj = GetKeyPhrases(KeyPhrases);
 
-                count++;
+            foreach (var doc in keyPhrasesObj["documents"])
+            {
+                //Busca token de acesso para API de Translate
+                string authToken = await GetAccessTokenTranslateAsync();
+
+                //Coloca num stringão todas as palavras chaves separadas por ", "
+                string keyPhrases = string.Join(", ", doc["keyPhrases"]);
+                //Chama API de Tradução, agora traduzindo as palavras chave em en para pt para mostrar corretamente pro usuário
+                var traducaokeyPhrases = Translate(authToken, "en", "pt", keyPhrases);
+
+                //Todo: Inserir de alguma forma no banco as keyPhrases
             }
 
             //ID do último tweet retornado, para consultar os mais antigos a partir desse, na próxima vez
-            var lastTweet = tweets[count];
+            var lastTweet = tweets[count - 1];
             long id_max = lastTweet["id"];
 
             //Inicia thread para ir enchendo a base do usuário com mais tweets
@@ -245,7 +258,7 @@ namespace WebStalkHard.Controllers
             return elemList[0].InnerXml;
         }
 
-        public dynamic GetKeyPhrases(string text)
+        public dynamic GetKeyPhrases(KeyPhrases objKeyPhrases)
         {
             //Busca as palavras chave de uma frase. Utilizado aqui, para análise dos sentimentos nos tweets do usuário
             var client = new HttpClient();
@@ -259,7 +272,11 @@ namespace WebStalkHard.Controllers
             // Request parameters
             var uri = "https://westus.api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases";
 
-            byte[] byteData = Encoding.UTF8.GetBytes("{\"documents\": [{\"language\": \"en\",\"id\": \"1\",\"text\": \"" + text + "\"}]}");
+            JavaScriptSerializer js = new JavaScriptSerializer();
+            string jsonKeyPhrases = JsonConvert.SerializeObject(objKeyPhrases);
+
+            //byte[] byteData = Encoding.UTF8.GetBytes("{\"documents\": [{\"language\": \"en\",\"id\": \"1\",\"text\": \"" + text + "\"}]}");
+            byte[] byteData = Encoding.UTF8.GetBytes(jsonKeyPhrases);
 
             var textAnalytics = "";
 
