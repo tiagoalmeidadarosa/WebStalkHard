@@ -39,8 +39,8 @@ namespace WebStalkHard.Models
         [JsonProperty(PropertyName = "idTweet")]
         public string IdTweet { get; set; }
 
-        [JsonProperty(PropertyName = "textTweet")]
-        public string TextTweet { get; set; }
+        //[JsonProperty(PropertyName = "textTweet")]
+        //public string TextTweet { get; set; }
 
         [JsonProperty(PropertyName = "keyPhrases")]
         public string KeyPhrases { get; set; }

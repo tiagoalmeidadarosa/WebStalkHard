@@ -166,12 +166,12 @@ namespace WebStalkHard.Controllers
 
             if(idMax > 0)
             {
-                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&max_id={1}&include_rts=0&exclude_replies=1&count=100";
+                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&max_id={1}&include_rts=0&exclude_replies=1&count=3";
                 timelineUrl = string.Format(timelineFormat, screenName, idMax);
             }
             else
             {
-                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&include_rts=0&exclude_replies=1&count=100";
+                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&include_rts=0&exclude_replies=1&count=3";
                 timelineUrl = string.Format(timelineFormat, screenName);
             }
             
@@ -202,7 +202,8 @@ namespace WebStalkHard.Controllers
                 string traducao = Translate(authToken, "pt", "en", tweet["text"]);
 
                 Document document = new Document();
-                document.Id = (string)tweet["id"];
+                long id = tweet["id"];
+                document.Id = id.ToString();
                 document.Language = "en";
                 document.Text = traducao;
 
@@ -226,14 +227,15 @@ namespace WebStalkHard.Controllers
 
                 //Todo: Inserir de alguma forma no banco as keyPhrases
                 Tweet tweet = new Tweet();
+
                 tweet.IdTweet = doc["id"];
-                //tweet.TextTweet = 
                 tweet.KeyPhrases = traducaokeyPhrases;
+                //tweet.TextTweet = 
 
                 item.Tweets.Add(tweet);
-
-                var loginCreated = await DocumentDBRepository<Login>.UpdateItemAsync(idLogin, item);
             }
+
+            await DocumentDBRepository<Login>.UpdateItemAsync(idLogin, item);
 
             //ID do último tweet retornado, para consultar os mais antigos a partir desse, na próxima vez
             var lastTweet = tweets[count - 1];
