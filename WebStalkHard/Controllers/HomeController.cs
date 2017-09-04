@@ -15,6 +15,7 @@ using WebStalkHard.Models;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Net.Http.Headers;
+using System.Xml.Linq;
 
 namespace WebStalkHard.Controllers
 {
@@ -189,27 +190,34 @@ namespace WebStalkHard.Controllers
                 }
             }
 
-            KeyPhrases KeyPhrases = new KeyPhrases();
-
             int count = 0;
+            Dictionary<long, string> texts = new Dictionary<long, string>();
             dynamic tweets = new JavaScriptSerializer().DeserializeObject(timeLineJson);
             foreach(dynamic tweet in tweets)
             {
-                //Busca token de acesso para API de Translate
-                string authToken = await GetAccessTokenTranslateAsync();
+                //Joga todos os textos dos tweets dentro de uma lista
+                texts.Add(tweet["id"], tweet["text"]);
 
-                //Chama API de Tradução, traduzindo o tweet de pt para en
-                string traducao = Translate(authToken, "pt", "en", tweet["text"]);
+                count++;
+            }
 
-                Document document = new Document();
+            //Busca token de acesso para API de Translate
+            string authToken = await GetAccessTokenTranslateAsync();
+
+            //Chama API de Tradução, traduzindo o tweet de pt para en
+            string[] translates = TranslateArray(authToken, "pt", "en", texts);
+
+            KeyPhrases KeyPhrases = new KeyPhrases();
+
+            foreach(var text in translates)
+            {
+                /*Document document = new Document();
                 long id = tweet["id"];
                 document.Id = id.ToString();
                 document.Language = "en";
                 document.Text = traducao;
 
-                KeyPhrases.Documents.Add(document);
-
-                count++;
+                KeyPhrases.Documents.Add(document);*/
             }
 
             //Chama API de Análise de Texto, para buscar as palavras chave da frase tweetada 
@@ -248,7 +256,7 @@ namespace WebStalkHard.Controllers
             }).Start();*/
         }
 
-        public string Translate(string authToken, string from, string to, string text)
+        /*public string Translate(string authToken, string from, string to, string text)
         {
             //Faz a tradução de uma frase. É utilizado pois a API de Análise de Texto só suporta o Inglês, aí traduzo e dps retorno pro Português de novo
             string uri = "https://api.microsofttranslator.com/v2/Http.svc/Translate?text=" + HttpUtility.UrlEncode(text) + "&from=" + from + "&to=" + to;
@@ -268,6 +276,85 @@ namespace WebStalkHard.Controllers
             XmlNodeList elemList = xmlDocument.GetElementsByTagName("string");
 
             return elemList[0].InnerXml;
+        }*/
+
+        public string[] TranslateArray(string authToken, string from, string to, Dictionary<long, string> texts)
+        {
+            //string[] translateArraySourceTexts = { "The answer lies in machine translation.", "the best machine translation technology cannot always provide translations tailored to a site or users like a human ", "Simply copy and paste a code snippet anywhere " };
+            string uri = "http://api.microsofttranslator.com/v2/Http.svc/TranslateArray";
+            string body = "<TranslateArrayRequest>" +
+                             "<AppId />" +
+                             "<From>{0}</From>" +
+                             "<Options>" +
+                                " <Category xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" +
+                                 "<ContentType xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\">{1}</ContentType>" +
+                                 "<ReservedFlags xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" +
+                                 "<State xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" +
+                                 "<Uri xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" +
+                                 "<User xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />" +
+                             "</Options>" +
+                             "<Texts>";
+                                 foreach(var text in texts)
+                                 {
+                                    body += "<string xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\">" + text.Value + "</string>";
+                                 }
+                   body +=   "</Texts>" +
+                             "<To>{2}</To>" +
+                          "</TranslateArrayRequest>";
+
+            string reqBody = string.Format(body, from, "text/plain", to);
+
+            // create the request
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
+            request.Headers.Add("Authorization", authToken);
+            request.ContentType = "text/xml";
+            request.Method = "POST";
+
+            using (System.IO.Stream stream = request.GetRequestStream())
+            {
+                byte[] arrBytes = System.Text.Encoding.UTF8.GetBytes(reqBody);
+                stream.Write(arrBytes, 0, arrBytes.Length);
+            }
+
+            // Get the response
+            WebResponse response = null;
+            try
+            {
+                response = request.GetResponse();
+                using (Stream stream = response.GetResponseStream())
+                {
+                    using (StreamReader rdr = new StreamReader(stream, System.Text.Encoding.UTF8))
+                    {
+                        // Deserialize the response
+                        string strResponse = rdr.ReadToEnd();
+                        XDocument doc = XDocument.Parse(@strResponse);
+                        XNamespace ns = "http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2";
+                        int soureceTextCounter = 0;
+                        foreach (XElement xe in doc.Descendants(ns + "TranslateArrayResponse"))
+                        {
+                            foreach (var node in xe.Elements(ns + "TranslatedText"))
+                            {
+                                texts[soureceTextCounter] = node.Value;
+                            }
+                            soureceTextCounter++;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                if (response != null)
+                {
+                    response.Close();
+                    response = null;
+                }
+            }
+
+            return texts;
         }
 
         public dynamic GetKeyPhrases(KeyPhrases objKeyPhrases)
