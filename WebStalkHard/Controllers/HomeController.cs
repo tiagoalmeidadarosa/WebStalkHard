@@ -190,13 +190,19 @@ namespace WebStalkHard.Controllers
                 }
             }
 
-            int count = 0;
-            Dictionary<long, string> texts = new Dictionary<long, string>();
             dynamic tweets = new JavaScriptSerializer().DeserializeObject(timeLineJson);
-            foreach(dynamic tweet in tweets)
+
+            int count = 0;
+            List<string> textTweets = new List<string>();
+            List<string> idTweets = new List<string>();
+
+            foreach (dynamic tweet in tweets)
             {
-                //Joga todos os textos dos tweets dentro de uma lista
-                texts.Add(tweet["id"], tweet["text"]);
+                //Joga todos os textos dos tweets dentro de uma lista, e os ids em outra
+                textTweets.Add(tweet["text"]);
+
+                long id = tweet["id"];
+                idTweets.Add(id.ToString());
 
                 count++;
             }
@@ -205,39 +211,44 @@ namespace WebStalkHard.Controllers
             string authToken = await GetAccessTokenTranslateAsync();
 
             //Chama API de Tradução, traduzindo o tweet de pt para en
-            string[] translates = TranslateArray(authToken, "pt", "en", texts);
+            string[] translates = TranslateArray(authToken, "pt", "en", textTweets.ToArray());
+            string[] ids = idTweets.ToArray();
 
+            //Monta objeto para fazer a chamada da API de análise do texto do tweet
             KeyPhrases KeyPhrases = new KeyPhrases();
 
-            foreach(var text in translates)
+            for(int i = 0; i < translates.Length; i++)
             {
-                /*Document document = new Document();
-                long id = tweet["id"];
-                document.Id = id.ToString();
+                Document document = new Document();
+                document.Id = ids[i];
                 document.Language = "en";
-                document.Text = traducao;
+                document.Text = translates[i];
 
-                KeyPhrases.Documents.Add(document);*/
+                KeyPhrases.Documents.Add(document);
             }
 
             //Chama API de Análise de Texto, para buscar as palavras chave da frase tweetada 
             dynamic keyPhrasesObj = GetKeyPhrases(KeyPhrases);
 
+            List<string> keyPhrases = new List<string>();
             foreach (var doc in keyPhrasesObj["documents"])
             {
-                //Busca token de acesso para API de Translate
-                string authToken = await GetAccessTokenTranslateAsync();
-
                 //Coloca num stringão todas as palavras chaves separadas por ", "
-                string keyPhrases = string.Join(", ", doc["keyPhrases"]);
-                //Chama API de Tradução, agora traduzindo as palavras chave em en para pt para mostrar corretamente pro usuário
-                var traducaokeyPhrases = Translate(authToken, "en", "pt", keyPhrases);
+                keyPhrases.Add(string.Join(", ", doc["keyPhrases"]));
+            }
 
-                //Todo: Inserir de alguma forma no banco as keyPhrases
+            //Busca token de acesso para API de Translate
+            authToken = await GetAccessTokenTranslateAsync();
+
+            //Chama API de Tradução, agora traduzindo as palavras chave em en para pt para mostrar corretamente pro usuário
+            string[] translateskeyPhrases = TranslateArray(authToken, "pt", "en", keyPhrases.ToArray());
+
+            for (int i = 0; i < translateskeyPhrases.Length; i++)
+            {
                 Tweet tweet = new Tweet();
 
-                tweet.IdTweet = doc["id"];
-                tweet.KeyPhrases = traducaokeyPhrases;
+                tweet.IdTweet = ids[i];
+                tweet.KeyPhrases = translateskeyPhrases[i];
                 //tweet.TextTweet = 
 
                 item.Tweets.Add(tweet);
@@ -278,7 +289,7 @@ namespace WebStalkHard.Controllers
             return elemList[0].InnerXml;
         }*/
 
-        public string[] TranslateArray(string authToken, string from, string to, Dictionary<long, string> texts)
+        public string[] TranslateArray(string authToken, string from, string to, string[] texts)
         {
             //string[] translateArraySourceTexts = { "The answer lies in machine translation.", "the best machine translation technology cannot always provide translations tailored to a site or users like a human ", "Simply copy and paste a code snippet anywhere " };
             string uri = "http://api.microsofttranslator.com/v2/Http.svc/TranslateArray";
@@ -296,7 +307,7 @@ namespace WebStalkHard.Controllers
                              "<Texts>";
                                  foreach(var text in texts)
                                  {
-                                    body += "<string xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\">" + text.Value + "</string>";
+                                    body += "<string xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\">" + text + "</string>";
                                  }
                    body +=   "</Texts>" +
                              "<To>{2}</To>" +
