@@ -241,7 +241,7 @@ namespace WebStalkHard.Controllers
             authToken = await GetAccessTokenTranslateAsync();
 
             //Chama API de Tradução, agora traduzindo as palavras chave em en para pt para mostrar corretamente pro usuário
-            string[] translateskeyPhrases = TranslateArray(authToken, "pt", "en", keyPhrases.ToArray());
+            string[] translateskeyPhrases = TranslateArray(authToken, "en", "pt", keyPhrases.ToArray());
 
             for (int i = 0; i < translateskeyPhrases.Length; i++)
             {
