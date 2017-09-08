@@ -16,6 +16,7 @@ using System.Runtime.Serialization;
 using System.Xml;
 using System.Net.Http.Headers;
 using System.Xml.Linq;
+using System.Configuration;
 
 namespace WebStalkHard.Controllers
 {
@@ -65,9 +66,43 @@ namespace WebStalkHard.Controllers
         [ActionName("Chatterbot")]
         public async Task<ActionResult> ChatterbotAsync(string id)
         {
-            var item = await DocumentDBRepository<Login>.GetItemAsync(id);
+            if(!string.IsNullOrEmpty(id))
+            {
+                string secretKeyBotFramework = ConfigurationManager.AppSettings["secretKeyBotFramework"];
+                string tokenBotFramework = await GetTokenBotFrameworkAsync(secretKeyBotFramework);
 
-            return View(item);
+                var item = await DocumentDBRepository<Login>.GetItemAsync(id);
+                if (item != null && !string.IsNullOrEmpty(tokenBotFramework))
+                {
+                    return View(new Chatterbot { Id = item.Id, Token = tokenBotFramework.Replace("\"", "") });
+                }
+            }
+
+            return View();
+        }
+
+        public async Task<string> GetTokenBotFrameworkAsync(string secretKey)
+        {
+            using (var client = new HttpClient())
+            using (var request = new HttpRequestMessage())
+            {
+                request.Method = HttpMethod.Get;
+                request.RequestUri = new Uri("https://webchat.botframework.com/api/tokens");
+                request.Headers.TryAddWithoutValidation("Authorization", "BotConnector " + secretKey);
+                client.Timeout = TimeSpan.FromSeconds(2);
+
+                HttpResponseMessage response;
+                string token = "";
+                try
+                {
+                    response = await client.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+                    token = await response.Content.ReadAsStringAsync();
+                }
+                catch (HttpException ex) { }
+
+                return token;
+            }
         }
 
         public TwitAuthenticateResponse GetAccessTokenTwitter()
@@ -245,13 +280,15 @@ namespace WebStalkHard.Controllers
 
             for (int i = 0; i < translateskeyPhrases.Length; i++)
             {
-                Tweet tweet = new Tweet();
-
-                tweet.IdTweet = ids[i];
-                tweet.KeyPhrases = translateskeyPhrases[i];
+                References reference = new References();
+                reference.IdTweet = ids[i];
                 //tweet.TextTweet = 
 
-                item.Tweets.Add(tweet);
+                KeyPhrase keyPhrase = new KeyPhrase();
+                keyPhrase.Text = translateskeyPhrases[i];
+                keyPhrase.References.Add(reference);
+
+                item.KeyPhrases.Add(keyPhrase);
             }
 
             await DocumentDBRepository<Login>.UpdateItemAsync(idLogin, item);

@@ -21,8 +21,8 @@ namespace WebStalkHard.Models
         [JsonProperty(PropertyName = "userTwitter")]
         public string UserTwitter { get; set; }
 
-        [JsonProperty(PropertyName = "tweets")]
-        public List<Tweet> Tweets { get; set; } = new List<Tweet>();
+        [JsonProperty(PropertyName = "keyPhrases")]
+        public List<KeyPhrase> KeyPhrases { get; set; } = new List<KeyPhrase>();
     }
 
     public class TwitAuthenticateResponse
@@ -34,7 +34,16 @@ namespace WebStalkHard.Models
         public string AccessToken { get; set; }
     }
 
-    public class Tweet
+    public class KeyPhrase
+    {
+        [JsonProperty(PropertyName = "text")]
+        public string Text { get; set; }
+
+        [JsonProperty(PropertyName = "references")]
+        public List<References> References { get; set; } = new List<References>();
+    }
+
+    public class References
     {
         [JsonProperty(PropertyName = "idTweet")]
         public string IdTweet { get; set; }
@@ -42,7 +51,7 @@ namespace WebStalkHard.Models
         //[JsonProperty(PropertyName = "textTweet")]
         //public string TextTweet { get; set; }
 
-        [JsonProperty(PropertyName = "keyPhrases")]
-        public string KeyPhrases { get; set; }
+        //[JsonProperty(PropertyName = "idPost")]
+        //public string IdPost { get; set; }
     }
 }

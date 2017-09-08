@@ -23,10 +23,14 @@
     <script src="~/Scripts/modernizr-2.6.2.js"></script>
 </head>
 <body>
-    @if (Model != null) {
+    @if (Model != null)
+    {
+        var id = Model.Id;
+        var token = Model.Token;
+
         <div class="container">
             <form class="form-signin">
-                <iframe src='https://webchat.botframework.com/embed/stalkhard?s=nQkZYLnshAk.cwA.0Ls.ngdhbkvnHnBeIE5FN9u7t4kEcg0aTSPG2ao8Cv1s5aQ' style="height:500px;width:600px;margin-left:-150px;"></iframe>
+                <iframe style="height:500px;width:600px;margin-left:-150px;" src='@string.Format("https://webchat.botframework.com/embed/stalkhard?t={0}&id={1}", token, id)'></iframe>
             </form>
         </div>
     }
