@@ -1,5 +1,6 @@
 ﻿using Microsoft.Azure.Documents;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 
 namespace WebStalkHard.Models
@@ -34,7 +35,10 @@ namespace WebStalkHard.Models
         public string TokenType { get; set; }
 
         [JsonProperty(PropertyName = "expires_in")] //The number of seconds until this access token expires.
-        public string ExpiresIn { get; set; }
+        public long ExpiresIn { get; set; }
+
+        [JsonProperty(PropertyName = "data_created")]
+        public DateTime DataCreated { get; set; }
     }
 
     public class TwitAuthenticateResponse

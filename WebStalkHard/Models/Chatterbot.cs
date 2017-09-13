@@ -9,5 +9,6 @@ namespace WebStalkHard.Models
     {
         public string Id { get; set; }
         public string Token { get; set; }
+        public bool DateValid { get; set; }
     }
 }

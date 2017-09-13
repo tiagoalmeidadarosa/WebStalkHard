@@ -23,7 +23,7 @@
     <script src="~/Scripts/modernizr-2.6.2.js"></script>
 </head>
 <body>
-    @if (Model != null)
+    @if (Model != null && Model.DateValid)
     {
         var id = Model.Id;
         var token = Model.Token;
@@ -37,7 +37,7 @@
     else
     {
         <div class="container">
-            Não foi possível encontrar o seu Chatterbot, por favor crie um novo visitando a página inicial.
+            Não foi possível encontrar o seu Chatterbot ou o tempo limite do mesmo foi expirado, por favor crie um novo visitando a página inicial.
         </div>
     }
 

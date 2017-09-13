@@ -38,6 +38,7 @@ namespace WebStalkHard.Controllers
         {
             Login login = new Login();
             login.UserFacebook = form["hiddenUserFacebook"];
+
             //Método que gera um Token de Acesso de longa duração para acesso a API do Facebook
             login.AccessTokenFacebook = GetTokenFacebookLongLife(form["hiddenAccessToken"]);
             
@@ -78,7 +79,9 @@ namespace WebStalkHard.Controllers
                 var item = await DocumentDBRepository<Login>.GetItemAsync(id);
                 if (item != null && !string.IsNullOrEmpty(tokenBotFramework))
                 {
-                    return View(new Chatterbot { Id = item.Id, Token = tokenBotFramework.Replace("\"", "") });
+                    bool dateValid = item.AccessTokenFacebook.DataCreated.AddSeconds(Convert.ToDouble(item.AccessTokenFacebook.ExpiresIn)) > DateTime.Now.AddDays(-1);
+
+                    return View(new Chatterbot { Id = item.Id, Token = tokenBotFramework.Replace("\"", ""), DateValid = dateValid });
                 }
             }
 
@@ -92,11 +95,15 @@ namespace WebStalkHard.Controllers
             string url = "oauth/access_token?grant_type={0}&client_id={1}&client_secret={2}&fb_exchange_token={3}";
 
             var client = new FacebookClient();
-            var retorno = client.Get(string.Format(url, "fb_exchange_token", appId, appSecret, accessTokenShort));
+            dynamic retorno = client.Get(string.Format(url, "fb_exchange_token", appId, appSecret, accessTokenShort));
 
-            //return JsonConvert.DeserializeObject<FacebookAuthenticateResponse>(retorno);
+            FacebookAuthenticateResponse facebookAuthenticateResponse = new FacebookAuthenticateResponse();
+            facebookAuthenticateResponse.AccessToken = retorno.access_token;
+            facebookAuthenticateResponse.TokenType = retorno.token_type;
+            facebookAuthenticateResponse.ExpiresIn = retorno.expires_in;
+            facebookAuthenticateResponse.DataCreated = DateTime.Now;
 
-            return new FacebookAuthenticateResponse();
+            return facebookAuthenticateResponse;
         }
 
         public async Task<string> GetTokenBotFrameworkAsync(string secretKey)
