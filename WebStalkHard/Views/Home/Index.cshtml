@@ -44,6 +44,7 @@
                 document.getElementById('status').innerHTML = 'Faça login neste aplicativo.';
                 document.getElementById('hiddenAccessToken').value = '';
                 document.getElementById('inputUserFacebook').value = '';
+                document.getElementById('hiddenUserFacebook').value = '';
             }
         }
 
@@ -99,6 +100,7 @@
                 console.log('Login bem-sucedido para: ' + response.name);
                 document.getElementById('status').innerHTML = 'Obrigado por fazer login, ' + response.name + '!';
                 document.getElementById('inputUserFacebook').value = response.name;
+                document.getElementById('hiddenUserFacebook').value = response.name;
             });
         }
     </script>
@@ -146,6 +148,9 @@
             <div id="status"></div>
             <div>
                 @Html.Hidden("hiddenAccessToken")
+            </div>
+            <div>
+                @Html.Hidden("hiddenUserFacebook")
             </div>
 
             @*<button class="btn btn-block">

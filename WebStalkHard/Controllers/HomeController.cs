@@ -17,6 +17,7 @@ using System.Xml;
 using System.Net.Http.Headers;
 using System.Xml.Linq;
 using System.Configuration;
+using Facebook;
 
 namespace WebStalkHard.Controllers
 {
@@ -36,9 +37,11 @@ namespace WebStalkHard.Controllers
         public async Task<ActionResult> CreateAsync(FormCollection form)
         {
             Login login = new Login();
-            login.UserFacebook = form["inputUserFacebook"];
-            login.AccessTokenFacebook = form["hiddenAccessToken"];
+            login.UserFacebook = form["hiddenUserFacebook"];
+            //Método que gera um Token de Acesso de longa duração para acesso a API do Facebook
+            login.AccessTokenFacebook = GetTokenFacebookLongLife(form["hiddenAccessToken"]);
             
+            //Retira o '@' caso o usuário tenha inserido no campo
             var userTwitter = form["inputUserTwitter"];
             if(userTwitter[0].Equals('@'))
             {
@@ -46,6 +49,7 @@ namespace WebStalkHard.Controllers
             }
             login.UserTwitter = userTwitter;
 
+            //Retorna Token de Acesso do Twitter
             var accessTokenTwitter = GetAccessTokenTwitter();
             login.AccessTokenTwitter = accessTokenTwitter;
 
@@ -81,12 +85,26 @@ namespace WebStalkHard.Controllers
             return View();
         }
 
+        public FacebookAuthenticateResponse GetTokenFacebookLongLife(string accessTokenShort)
+        {
+            string appId = ConfigurationManager.AppSettings["appIdFacebook"];
+            string appSecret = ConfigurationManager.AppSettings["appSecretFacebook"];
+            string url = "oauth/access_token?grant_type={0}&client_id={1}&client_secret={2}&fb_exchange_token={3}";
+
+            var client = new FacebookClient();
+            var retorno = client.Get(string.Format(url, "fb_exchange_token", appId, appSecret, accessTokenShort));
+
+            //return JsonConvert.DeserializeObject<FacebookAuthenticateResponse>(retorno);
+
+            return new FacebookAuthenticateResponse();
+        }
+
         public async Task<string> GetTokenBotFrameworkAsync(string secretKey)
         {
             using (var client = new HttpClient())
             using (var request = new HttpRequestMessage())
             {
-                request.Method = HttpMethod.Get;
+                request.Method = System.Net.Http.HttpMethod.Get;
                 request.RequestUri = new Uri("https://webchat.botframework.com/api/tokens");
                 request.Headers.TryAddWithoutValidation("Authorization", "BotConnector " + secretKey);
                 client.Timeout = TimeSpan.FromSeconds(2);
@@ -170,7 +188,7 @@ namespace WebStalkHard.Controllers
             using (var client = new HttpClient())
             using (var request = new HttpRequestMessage())
             {
-                request.Method = HttpMethod.Post;
+                request.Method = System.Net.Http.HttpMethod.Post;
                 request.RequestUri = new Uri("https://api.cognitive.microsoft.com/sts/v1.0/issueToken");
                 request.Content = new StringContent(string.Empty);
                 request.Headers.TryAddWithoutValidation("Ocp-Apim-Subscription-Key", "efc56f55f859425885cd2a46ed75fb55");
