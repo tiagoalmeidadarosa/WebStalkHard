@@ -79,7 +79,8 @@ namespace WebStalkHard.Controllers
                 var item = await DocumentDBRepository<Login>.GetItemAsync(id);
                 if (item != null && !string.IsNullOrEmpty(tokenBotFramework))
                 {
-                    bool dateValid = item.AccessTokenFacebook.DataCreated.AddSeconds(Convert.ToDouble(item.AccessTokenFacebook.ExpiresIn)) > DateTime.Now.AddDays(-1);
+                    //Verifica se o chatterbot não expirou, pois após 60 dias o token do Facebook pode ter sido expirado
+                    bool dateValid = item.AccessTokenFacebook.DataCreated.AddSeconds(Convert.ToDouble(item.AccessTokenFacebook.ExpiresIn)) >= DateTime.Now.AddDays(1);
 
                     return View(new Chatterbot { Id = item.Id, Token = tokenBotFramework.Replace("\"", ""), DateValid = dateValid });
                 }
