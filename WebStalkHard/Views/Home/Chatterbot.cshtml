@@ -12,7 +12,7 @@
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <meta name="description" content="">
     <meta name="author" content="">
-    <link rel="icon" href="favicon.ico">
+    <link rel="icon" href="~/favicon.ico">
     <title>StalkHard - Chatterbot</title>
     <!-- Bootstrap core CSS -->
     <link href="~/Content/bootstrap.min.css" rel="stylesheet">
@@ -27,17 +27,24 @@
     {
         var id = Model.Id;
         var token = Model.Token;
+        var name = Model.NomeUser;
+        var image = Model.ImageUser;
 
         <div class="container">
             <form class="form-signin">
-                <iframe style="height:500px;width:600px;margin-left:-150px;" src='@string.Format("https://webchat.botframework.com/embed/stalkhard?t={0}&userid={1}", token, id)'></iframe>
+                <div class="form-signin-heading">
+                    <img src="@image" class="img-circle" style="width:70px;margin-left:110px;">
+                    <h4 style="text-align:center;"><b>@name</b></h4>
+                </div>
+
+                <iframe style="height:450px;width:750px;margin-left:-225px;" src='@string.Format("https://webchat.botframework.com/embed/stalkhard?t={0}&userid={1}", token, id)'></iframe>
             </form>
         </div>
     }
     else
     {
-        <div class="container">
-            Não foi possível encontrar o seu Chatterbot ou o tempo limite do mesmo foi expirado, por favor crie um novo visitando a página inicial.
+        <div class="container alert alert-danger" role="alert">
+            Não foi possível encontrar o Chatterbot ou o tempo limite foi expirado, por favor crie um novo visitando a <a href="/Home/Index" class="alert-link">página inicial</a>
         </div>
     }
 

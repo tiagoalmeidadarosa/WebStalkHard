@@ -10,5 +10,7 @@ namespace WebStalkHard.Models
         public string Id { get; set; }
         public string Token { get; set; }
         public bool DateValid { get; set; }
+        public string NomeUser { get; set; }
+        public string ImageUser { get; set; }
     }
 }

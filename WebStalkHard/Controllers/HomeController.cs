@@ -77,12 +77,28 @@ namespace WebStalkHard.Controllers
                 string tokenBotFramework = await GetTokenBotFrameworkAsync(secretKeyBotFramework);
 
                 var item = await DocumentDBRepository<Login>.GetItemAsync(id);
+
                 if (item != null && !string.IsNullOrEmpty(tokenBotFramework))
                 {
                     //Verifica se o chatterbot não expirou, pois após 60 dias o token do Facebook pode ter sido expirado
                     bool dateValid = item.AccessTokenFacebook.DataCreated.AddSeconds(Convert.ToDouble(item.AccessTokenFacebook.ExpiresIn)) >= DateTime.Now.AddDays(1);
+                    string nome = "";
+                    string urlImage = "";
 
-                    return View(new Chatterbot { Id = item.Id, Token = tokenBotFramework.Replace("\"", ""), DateValid = dateValid });
+                    if (dateValid)
+                    {
+                        var client = new FacebookClient();
+                        client.AccessToken = item.AccessTokenFacebook.AccessToken;
+                        client.Version = "v2.10";
+                        //client.AppId = ConfigurationManager.AppSettings["appIdFacebook"];
+                        //client.AppSecret = ConfigurationManager.AppSettings["appSecretFacebook"];
+
+                        dynamic retorno = client.Get("me?fields=name,picture");
+                        nome = retorno.name;
+                        urlImage = retorno.picture.data.url;
+                    }
+
+                    return View(new Chatterbot { Id = item.Id, Token = tokenBotFramework.Replace("\"", ""), DateValid = dateValid, NomeUser = nome, ImageUser = urlImage });
                 }
             }
 
@@ -310,11 +326,24 @@ namespace WebStalkHard.Controllers
                 reference.IdTweet = ids[i];
                 //tweet.TextTweet = 
 
-                KeyPhrase keyPhrase = new KeyPhrase();
-                keyPhrase.Text = translateskeyPhrases[i];
-                keyPhrase.References.Add(reference);
+                foreach(string keyPhraseTranslate in translateskeyPhrases[i].Split(new[] { ", " }, StringSplitOptions.None))
+                {
+                    //Verifica se já tem no objeto uma palavra chave com o mesmo texto
+                    if(item.KeyPhrases.Count(k => k.Text == keyPhraseTranslate) > 0)
+                    {
+                        //Se já existe, somente inclui uma nova referência
+                        item.KeyPhrases.FirstOrDefault(k => k.Text == keyPhraseTranslate).References.Add(reference);
+                    }
+                    else
+                    {
+                        //Caso não exista, cria uma nova
+                        KeyPhrase keyPhrase = new KeyPhrase();
+                        keyPhrase.Text = keyPhraseTranslate;
+                        keyPhrase.References.Add(reference);
 
-                item.KeyPhrases.Add(keyPhrase);
+                        item.KeyPhrases.Add(keyPhrase);
+                    }
+                }
             }
 
             await DocumentDBRepository<Login>.UpdateItemAsync(idLogin, item);
