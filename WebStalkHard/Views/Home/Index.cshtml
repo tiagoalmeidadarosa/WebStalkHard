@@ -107,6 +107,13 @@
 
     <div id="fb-root"></div>
 
+    <form method="post" action="/Home/Search" class="navbar-form navbar-right" style="width:100%;padding-left:75%;">
+        <div class="form-group">
+            @Html.TextBox("inputSearch", "", new { @class = "form-control", @placeholder = "Pesquisa", @required = true })
+            <button type="submit" class="btn btn-primary">Buscar</button>
+        </div>
+    </form>
+
     <div class="container">
         <form method="post" class="form-signin" action="/Home/Create">
             <img src="~/Images/logo.png" alt="StalkHard" class="img-circle" style="width:100px;margin-left:100px;">
@@ -137,6 +144,10 @@
                 </div>
             </div>
 
+            <div @*class="checkbox"*@>
+                <label>@Html.CheckBox("checkVisibleSearch", true, new { @style = "margin-left:80px;" }) <span>Visível na Pesquisa</span></label>
+            </div>
+
             <button id="btnCriar" class="btn btn-lg btn-primary btn-block" type="submit">Criar</button>
             <div class="loader" style="margin-left:120px;margin-top:10px;display:none;"></div>
 
@@ -164,11 +175,26 @@
     <script src="~/Scripts/bootstrap.min.js"></script>
 
     <script>
+        //Valida usuário do twitter
         //Start gif loader
         $("#btnCriar").click(function () {
-            if ($("#inputUserTwitter").val() != "") {
-                //$(this).attr("disabled", "true");
-                $(".loader").show();
+            var userTwitter = $("#inputUserTwitter").val();
+
+            if (userTwitter != "") {
+                $.ajax({
+                    url: '/Home/ValidaUserTwitter',
+                    data: { screenName: userTwitter },
+                    async: false,
+                    success: function (data) {
+                        if (data) {
+                            $("#btnCriar").html("Criando...");
+                            $(".loader").show();
+                        }
+                        else {
+                            $("#inputUserTwitter").val("");
+                        }
+                    }
+                });
             }
         });
     </script>

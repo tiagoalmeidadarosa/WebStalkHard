@@ -1,6 +1,6 @@
 ﻿/* Gif loading */
 .loader {
-    border: 8px solid #f3f3f3; /* Light grey */
+    border: 8px solid #ffffff; /* Light grey = #f3f3f3 */
     border-top: 8px solid #3498db; /* Blue */
     border-radius: 50%;
     width: 50px;
@@ -19,7 +19,7 @@
 }
 
 body {
-    padding-top: 50px;
+    /*padding-top: 50px;*/
     padding-bottom: 20px;
 }
 
@@ -34,5 +34,9 @@ input,
 select,
 textarea {
     max-width: 280px;
+}
+
+label {
+    font-weight: normal;
 }
 

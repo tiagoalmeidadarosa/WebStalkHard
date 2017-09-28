@@ -32,6 +32,49 @@ namespace WebStalkHard.Controllers
             return View();
         }
 
+        public JsonResult ValidaUserTwitter(string screenName)
+        {
+            TwitAuthenticateResponse accessToken = GetAccessTokenTwitter();
+
+            //Retira o '@' caso o usuário tenha inserido no campo
+            if (screenName[0].Equals('@'))
+            {
+                screenName = screenName.Substring(1);
+            }
+
+            // Verifica se o usuário informado realmente existe
+            var userFormat = "https://api.twitter.com/1.1/users/show.json?screen_name={0}";
+            var userUrl = string.Format(userFormat, screenName);
+
+            HttpWebRequest userRequest = (HttpWebRequest)WebRequest.Create(userUrl);
+            var userHeaderFormat = "{0} {1}";
+            userRequest.Headers.Add("Authorization", string.Format(userHeaderFormat, accessToken.TokenType, accessToken.AccessToken));
+            userRequest.Method = "Get";
+
+            try
+            {
+                WebResponse userResponse = userRequest.GetResponse();
+                var userJson = string.Empty;
+                using (userResponse)
+                {
+                    using (var reader = new StreamReader(userResponse.GetResponseStream()))
+                    {
+                        userJson = reader.ReadToEnd();
+                    }
+
+                    dynamic user = new JavaScriptSerializer().DeserializeObject(userJson);
+
+                    if (user["id"] > 0 && !user["protected"])
+                    {
+                        return Json(true, JsonRequestBehavior.AllowGet);
+                    }
+                }
+            }
+            catch(Exception ex) { }
+
+            return Json(false, JsonRequestBehavior.AllowGet);
+        }
+
         [HttpPost]
         [ActionName("Create")]
         public async Task<ActionResult> CreateAsync(FormCollection form)
@@ -53,6 +96,12 @@ namespace WebStalkHard.Controllers
             //Retorna Token de Acesso do Twitter
             var accessTokenTwitter = GetAccessTokenTwitter();
             login.AccessTokenTwitter = accessTokenTwitter;
+
+            login.VisibleSearch = false;
+            if (form["checkVisibleSearch"].Contains("true"))
+            {
+                login.VisibleSearch = true;
+            }
 
             var loginCreated = await DocumentDBRepository<Login>.CreateItemAsync(login);
 
@@ -81,7 +130,9 @@ namespace WebStalkHard.Controllers
                 if (item != null && !string.IsNullOrEmpty(tokenBotFramework))
                 {
                     //Verifica se o chatterbot não expirou, pois após 60 dias o token do Facebook pode ter sido expirado
-                    bool dateValid = item.AccessTokenFacebook.DataCreated.AddSeconds(Convert.ToDouble(item.AccessTokenFacebook.ExpiresIn)) >= DateTime.Now.AddDays(1);
+                    bool dateValid = true;
+                    if(item.AccessTokenFacebook.ExpiresIn > 0)
+                        dateValid = item.AccessTokenFacebook.DataCreated.AddSeconds(Convert.ToDouble(item.AccessTokenFacebook.ExpiresIn)) >= DateTime.Now.AddDays(1);
                     string nome = "";
                     string urlImage = "";
 
@@ -105,6 +156,16 @@ namespace WebStalkHard.Controllers
             return View();
         }
 
+        [ActionName("Search")]
+        public async Task<ActionResult> SearchAsync(FormCollection form)
+        {
+            string search = form["inputSearch"];
+
+            var items = await DocumentDBRepository<Login>.GetItemsAsync(l => l.VisibleSearch && l.UserFacebook.Contains(search));
+
+            return View(items);
+        }
+
         public FacebookAuthenticateResponse GetTokenFacebookLongLife(string accessTokenShort)
         {
             string appId = ConfigurationManager.AppSettings["appIdFacebook"];
@@ -117,7 +178,8 @@ namespace WebStalkHard.Controllers
             FacebookAuthenticateResponse facebookAuthenticateResponse = new FacebookAuthenticateResponse();
             facebookAuthenticateResponse.AccessToken = retorno.access_token;
             facebookAuthenticateResponse.TokenType = retorno.token_type;
-            facebookAuthenticateResponse.ExpiresIn = retorno.expires_in;
+            if(retorno.expires_in != null)
+                facebookAuthenticateResponse.ExpiresIn = retorno.expires_in;
             facebookAuthenticateResponse.DataCreated = DateTime.Now;
 
             return facebookAuthenticateResponse;
@@ -131,7 +193,7 @@ namespace WebStalkHard.Controllers
                 request.Method = System.Net.Http.HttpMethod.Get;
                 request.RequestUri = new Uri("https://webchat.botframework.com/api/tokens");
                 request.Headers.TryAddWithoutValidation("Authorization", "BotConnector " + secretKey);
-                client.Timeout = TimeSpan.FromSeconds(2);
+                client.Timeout = TimeSpan.FromSeconds(10);
 
                 HttpResponseMessage response;
                 string token = "";
@@ -216,7 +278,7 @@ namespace WebStalkHard.Controllers
                 request.RequestUri = new Uri("https://api.cognitive.microsoft.com/sts/v1.0/issueToken");
                 request.Content = new StringContent(string.Empty);
                 request.Headers.TryAddWithoutValidation("Ocp-Apim-Subscription-Key", "efc56f55f859425885cd2a46ed75fb55");
-                client.Timeout = TimeSpan.FromSeconds(2);
+                client.Timeout = TimeSpan.FromSeconds(10);
 
                 HttpResponseMessage response;
                 string token = "";

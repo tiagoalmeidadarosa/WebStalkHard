@@ -22,6 +22,9 @@ namespace WebStalkHard.Models
         [JsonProperty(PropertyName = "userTwitter")]
         public string UserTwitter { get; set; }
 
+        [JsonProperty(PropertyName = "visibleSearch")]
+        public bool VisibleSearch { get; set; }
+
         [JsonProperty(PropertyName = "keyPhrases")]
         public List<KeyPhrase> KeyPhrases { get; set; } = new List<KeyPhrase>();
     }
