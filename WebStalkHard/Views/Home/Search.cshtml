@@ -23,17 +23,18 @@
     <script src="~/Scripts/modernizr-2.6.2.js"></script>
 </head>
 <body>
-    <form method="post" action="/Home/Search" class="navbar-form navbar-right" style="width:100%;padding-left:75%;">
-        <div class="form-group">
-            @Html.TextBox("inputSearch", "", new { @class = "form-control", @placeholder = "Pesquisa", @required = true })
+    <form method="get" action="/Home/Search" class="navbar-form navbar-right" style="width:100%;">
+        <div class="form-group" style="float:right;margin-right:40px;">
+            @Html.TextBox("q", "", new { @class = "form-control", @placeholder = "Pesquisa", @required = true })
             <button type="submit" class="btn btn-primary">Buscar</button>
+            <a href="/Home/Index" class="glyphicon glyphicon-home" aria-hidden="true"></a>
         </div>
     </form>
 
-    @*<h4 align="center">Pesquisa: </h4>*@
-
     <div class="container">
-        <table class="table table-striped" style="width:500px;margin-left:300px;">
+        <u><h4 align="center">Pesquisa: @ViewData["Search"]</h4></u>
+
+        <table class="table table-striped" style="width:500px;margin-left:325px;">
             <thead>
                 <tr>
                     <th>Nome</th>

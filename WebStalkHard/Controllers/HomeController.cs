@@ -157,11 +157,11 @@ namespace WebStalkHard.Controllers
         }
 
         [ActionName("Search")]
-        public async Task<ActionResult> SearchAsync(FormCollection form)
+        public async Task<ActionResult> SearchAsync(string q)
         {
-            string search = form["inputSearch"];
+            ViewData["Search"] = q;
 
-            var items = await DocumentDBRepository<Login>.GetItemsAsync(l => l.VisibleSearch && l.UserFacebook.Contains(search));
+            var items = await DocumentDBRepository<Login>.GetItemsAsync(l => l.VisibleSearch && l.UserFacebook.Contains(q));
 
             return View(items);
         }
@@ -306,12 +306,12 @@ namespace WebStalkHard.Controllers
 
             if(idMax > 0)
             {
-                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&max_id={1}&include_rts=0&exclude_replies=1&count=3";
+                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&max_id={1}&include_rts=0&exclude_replies=1&count=5";
                 timelineUrl = string.Format(timelineFormat, screenName, idMax);
             }
             else
             {
-                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&include_rts=0&exclude_replies=1&count=3";
+                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&include_rts=0&exclude_replies=1&count=5";
                 timelineUrl = string.Format(timelineFormat, screenName);
             }
             
