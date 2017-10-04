@@ -306,12 +306,12 @@ namespace WebStalkHard.Controllers
 
             if(idMax > 0)
             {
-                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&max_id={1}&include_rts=0&exclude_replies=1&count=5";
+                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&max_id={1}&include_rts=0&exclude_replies=1&count=25";
                 timelineUrl = string.Format(timelineFormat, screenName, idMax);
             }
             else
             {
-                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&include_rts=0&exclude_replies=1&count=5";
+                timelineFormat = "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name={0}&include_rts=0&exclude_replies=1&count=25";
                 timelineUrl = string.Format(timelineFormat, screenName);
             }
             
