@@ -161,7 +161,7 @@ namespace WebStalkHard.Controllers
         {
             ViewData["Search"] = q;
 
-            var items = await DocumentDBRepository<Login>.GetItemsAsync(l => l.VisibleSearch && l.UserFacebook.Contains(q));
+            var items = await DocumentDBRepository<Login>.GetItemsAsync(l => l.VisibleSearch && l.UserFacebook.ToUpper().Contains(q.ToUpper()));
 
             return View(items);
         }
