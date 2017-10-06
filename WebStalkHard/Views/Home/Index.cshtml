@@ -118,10 +118,14 @@
     <div id="fb-root"></div>
 
     <form method="get" action="/Home/Search" class="navbar-form navbar-right" style="width:100%;">
-        <div class="form-group" style="float:right;margin-right:40px;">
-            @Html.TextBox("q", "", new { @class = "form-control", @placeholder = "Pesquisa", @required = true })
-            <button type="submit" class="btn btn-primary">Buscar</button>
-            <a href="/Home/Index" class="glyphicon glyphicon-home" aria-hidden="true"></a>
+        <div class="form-group" style="float:right;margin-right:40px;margin-bottom:10px;">
+            <div style="width:100%;">
+                @Html.TextBox("q", "", new { @class = "form-control", @placeholder = "Pesquisa", @required = true })
+                <div style="float:right;">
+                    <button type="submit" class="btn btn-primary">Buscar</button>
+                    <a href="/Home/Index" class="glyphicon glyphicon-home" aria-hidden="true"></a>
+                </div>
+            </div>
         </div>
     </form>
 
@@ -131,7 +135,7 @@
                 <img src="~/Images/logo.png" alt="StalkHard" class="img-circle" style="width:100px;">
             </h3>
 
-            <div>
+            <div style="width:100%;margin-left:auto;margin-right:auto;">
                 <div style="float:left;margin-left:20px;">
                     <label for="inputUserFacebook" class="sr-only">Usuário do Facebook</label>
                     @Html.TextBox("inputUserFacebook", "", new { @class = "form-control", @placeholder = "/stalkhard", @required = true, @disabled = true })

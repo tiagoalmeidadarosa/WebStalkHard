@@ -43,13 +43,18 @@
         <div class="container">
             <form class="form-signin">
                 <div class="form-signin-heading">
-                    <img src="@image" class="img-circle" style="width:70px;margin-left:110px;">
+                    <div style="width:70px;margin-left:auto;margin-right:auto;">
+                        <img src="@image" class="img-circle" style="width:70px;">
+                    </div>
                     <h4 style="text-align:center;"><b>@name</b></h4>
                 </div>
-
-                <iframe style="height:490px;width:750px;margin-left:-225px;" src='@string.Format("https://webchat.botframework.com/embed/stalkhard?t={0}&userid={1}", token, id)'></iframe>
-                <h6 align="center">Crie o seu próprio chatterbot clicando aqui <a href="/Home/Index" class="glyphicon glyphicon-home" aria-hidden="true"></a></h6>
             </form>
+        </div>
+        <div style="width:100%;height:100%;position:fixed;">
+            <div style="width:70%;height:70%;margin-left:auto;margin-right:auto;">
+                <iframe style="width:100%;height:100%;" src='@string.Format("https://webchat.botframework.com/embed/stalkhard?t={0}&userid={1}", token, id)'></iframe>
+            </div>
+            <h6 align="center">Crie o seu próprio chatterbot clicando aqui <a href="/Home/Index" class="glyphicon glyphicon-home" aria-hidden="true"></a></h6>
         </div>
     }
     else

@@ -24,17 +24,21 @@
 </head>
 <body>
     <form method="get" action="/Home/Search" class="navbar-form navbar-right" style="width:100%;">
-        <div class="form-group" style="float:right;margin-right:40px;">
-            @Html.TextBox("q", "", new { @class = "form-control", @placeholder = "Pesquisa", @required = true })
-            <button type="submit" class="btn btn-primary">Buscar</button>
-            <a href="/Home/Index" class="glyphicon glyphicon-home" aria-hidden="true"></a>
+        <div class="form-group" style="float:right;margin-right:40px;margin-bottom:10px;">
+            <div style="width:100%;">
+                @Html.TextBox("q", "", new { @class = "form-control", @placeholder = "Pesquisa", @required = true })
+                <div style="float:right;">
+                    <button type="submit" class="btn btn-primary">Buscar</button>
+                    <a href="/Home/Index" class="glyphicon glyphicon-home" aria-hidden="true"></a>
+                </div>
+            </div>
         </div>
     </form>
 
     <div class="container">
         <u><h4 align="center">Pesquisa: @ViewData["Search"]</h4></u>
 
-        <table class="table table-striped" style="width:500px;margin-left:325px;">
+        <table class="table table-striped" style="width:500px;margin-left:auto;margin-right:auto;">
             <thead>
                 <tr>
                     <th>Nome</th>
